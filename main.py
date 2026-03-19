@@ -82,6 +82,23 @@ def _populate_countries():
                 conn.rollback()
                 print_exc()
 
+def _populate_cities():
+    with psycopg2.connect(dbname=os.getenv('DB'), user=os.getenv('DB_USER'), password=os.getenv('DB_PWD')) as conn:
+        with conn.cursor() as cur:
+
+            cur.execute("DELETE FROM cities;")
+            conn.commit()
+
+            _query = 'INSERT INTO cities(id, name, country_id) VALUES (%s, %s, %s)'
+            cities = {1: ('Porvoo', 1)}
+            try:
+                for key, (name, country_id) in cities.items():
+                    cur.execute(_query,(key, name, country_id))
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                print_exc()
+
 if __name__ == "__main__":
     bbox = get_bbox("Helsinki")
     _locations = get_openaq_locations_by_bbox(bbox)
