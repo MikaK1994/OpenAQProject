@@ -65,6 +65,23 @@ def download_file_by_location(location_id, year, month):
         else:
             print(f"Failed to fetch. Status: {response.status_code}")
 
+def _populate_countries():
+    with psycopg2.connect(dbname=os.getenv('DB'), user=os.getenv('DB_USER'), password=os.getenv('DB_PWD')) as conn:
+        with conn.cursor() as cur:
+
+            cur.execute("DELETE FROM countries;")
+            conn.commit()
+
+            _query = 'INSERT INTO countries(id, code, name) VALUES (%s, %s, %s)'
+            countries = {1: ('FI', 'Finland')}
+            try:
+                for key, (code, name) in countries.items():
+                    cur.execute(_query,(key, code, name))
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                print_exc()
+
 if __name__ == "__main__":
     bbox = get_bbox("Helsinki")
     _locations = get_openaq_locations_by_bbox(bbox)
