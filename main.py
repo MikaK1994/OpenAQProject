@@ -1,5 +1,6 @@
 import io
 import os
+import traceback
 from traceback import print_exc
 
 import pandas as pd
@@ -8,6 +9,7 @@ from urllib.parse import quote
 import psycopg2
 import requests
 from dotenv import load_dotenv
+from unicodedata import numeric
 
 load_dotenv()
 
@@ -85,7 +87,6 @@ def _populate_countries():
 def _populate_cities():
     with psycopg2.connect(dbname=os.getenv('DB'), user=os.getenv('DB_USER'), password=os.getenv('DB_PWD')) as conn:
         with conn.cursor() as cur:
-
             cur.execute("DELETE FROM cities;")
             conn.commit()
 
@@ -98,6 +99,28 @@ def _populate_cities():
             except Exception as e:
                 conn.rollback()
                 print_exc()
+
+def _populate_locations():
+
+    df = pd.read_csv("2975-20260101.csv",
+    usecols= ['location_id', 'lat', 'lon', 'location'], keep_default_na=False)
+
+    df['city_id'] = 1
+    df = df.drop_duplicates()
+
+    _query = 'INSERT INTO locations(location_id, lat, lon, location, city_id) VALUES (%s, %s, %s, %s, %s);'
+    with psycopg2.connect(dbname=os.getenv('DB'), user=os.getenv('DB_USER'), password=os.getenv('DB_PWD')) as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM locations")
+            conn.commit()
+            try:
+                for _index, row in df.iterrows():
+                    cur.execute(_query, (row['location_id'], row['lat'],
+                                        row['lon'], row['location'].strip('-2975'), row['city_id']))
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                traceback.print_exc()
 
 if __name__ == "__main__":
     bbox = get_bbox("Helsinki")
