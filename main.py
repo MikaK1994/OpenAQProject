@@ -103,11 +103,9 @@ def _populate_locations():
 
     df = pd.read_csv("2975-20260101.csv",
     usecols= ['location_id', 'lat', 'lon', 'location'], keep_default_na=False)
-    city_map = {
-        'Porvoo': 1
-    }
 
-    df['city_id'] = df['city_id'].map(city_map)
+    df = df.drop_duplicates()
+    df['city_id'] = 1
 
     _query = 'INSERT INTO locations(location_id, lat, lon, location, city_id) VALUES (%s, %s, %s, %s, %s);'
     with psycopg2.connect(dbname=os.getenv('DB'), user=os.getenv('DB_USER'), password=os.getenv('DB_PWD')) as conn:
