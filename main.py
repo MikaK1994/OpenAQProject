@@ -86,11 +86,12 @@ def _populate_countries():
 def _populate_cities():
     with psycopg2.connect(dbname=os.getenv('DB'), user=os.getenv('DB_USER'), password=os.getenv('DB_PWD')) as conn:
         with conn.cursor() as cur:
+            cur.execute('DELETE FROM locations;')
             cur.execute("DELETE FROM cities;")
             conn.commit()
 
             _query = 'INSERT INTO cities(id, name, country_id) VALUES (%s, %s, %s)'
-            cities = {1: ('Porvoo', 1)}
+            cities = {1: ('Helsinki', 1)}
             try:
                 for key, (name, country_id) in cities.items():
                     cur.execute(_query,(key, name, country_id))
@@ -116,6 +117,26 @@ def _populate_locations():
                 for _index, row in df.iterrows():
                     cur.execute(_query, (row['location_id'], row['lat'],
                                 row['lon'], row['location'][:-5], row['city_id']))
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                traceback.print_exc()
+
+def _populate_sensors():
+
+    df = pd.read_csv("2975-20260101.csv",
+    usecols= ['sensors_id', 'parameter', 'units'], keep_default_na=False)
+
+    df = df.drop_duplicates()
+
+    _query = 'INSERT INTO sensors(sensors_id, parameter, units) VALUES (%s, %s, %s);'
+    with psycopg2.connect(dbname=os.getenv('DB'), user=os.getenv('DB_USER'), password=os.getenv('DB_PWD')) as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM sensors")
+            conn.commit()
+            try:
+                for _index, row in df.iterrows():
+                    cur.execute(_query, (row['sensors_id'], row['parameter'], row['units']))
                 conn.commit()
             except Exception as e:
                 conn.rollback()
