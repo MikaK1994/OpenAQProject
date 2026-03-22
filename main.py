@@ -111,7 +111,8 @@ def _populate_locations():
     _query = 'INSERT INTO locations(location_id, lat, lon, location, city_id) VALUES (%s, %s, %s, %s, %s);'
     with psycopg2.connect(dbname=os.getenv('DB'), user=os.getenv('DB_USER'), password=os.getenv('DB_PWD')) as conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM locations")
+            cur.execute("DELETE FROM measurements;")
+            cur.execute("DELETE FROM locations;")
             conn.commit()
             try:
                 for _index, row in df.iterrows():
@@ -132,7 +133,8 @@ def _populate_sensors():
     _query = 'INSERT INTO sensors(sensors_id, parameter, units) VALUES (%s, %s, %s);'
     with psycopg2.connect(dbname=os.getenv('DB'), user=os.getenv('DB_USER'), password=os.getenv('DB_PWD')) as conn:
         with conn.cursor() as cur:
-            cur.execute("DELETE FROM sensors")
+            cur.execute("DELETE FROM measurements;")
+            cur.execute("DELETE FROM sensors;")
             conn.commit()
             try:
                 for _index, row in df.iterrows():
@@ -142,11 +144,31 @@ def _populate_sensors():
                 conn.rollback()
                 traceback.print_exc()
 
+def _populate_measurements():
+    df = pd.read_csv("2975-20260101.csv",
+    usecols= ['datetime', 'value', 'sensors_id'], keep_default_na=False)
+
+    df['location_id'] = 2975
+
+    _query = 'INSERT INTO measurements(datetime, value, location_id, sensors_id) VALUES (%s, %s, %s, %s);'
+    with psycopg2.connect(dbname=os.getenv('DB'), user=os.getenv('DB_USER'), password=os.getenv('DB_PWD')) as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM measurements")
+            conn.commit()
+            try:
+                for _index, row in df.iterrows():
+                    cur.execute(_query, (row['datetime'], row['value'],
+                                        row['location_id'], row['sensors_id']))
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                traceback.print_exc()
+
 if __name__ == "__main__":
     bbox = get_bbox("Helsinki")
     _locations = get_openaq_locations_by_bbox(bbox)
     #download_file_by_location(2975, 2026, 1)
-    _populate_locations()
+    _populate_measurements()
 
 
 
