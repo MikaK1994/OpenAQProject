@@ -1,3 +1,4 @@
+import glob
 import io
 import os
 import traceback
@@ -111,12 +112,14 @@ def _populate_cities():
                 print_exc()
 
 def _populate_locations():
+    joined_files = os.path.join("data", "*.csv")
+    joined_list = glob.glob(joined_files)
+    df = pd.concat(map(pd.read_csv, joined_list), ignore_index=True)
+    df = df[df.columns[~df.columns.isin(['sensors_id', 'datetime', 'parameter',
+                                         'units', 'value'])]]
 
-    df = pd.read_csv("2975-20260101.csv",
-    usecols= ['location_id', 'lat', 'lon', 'location'], keep_default_na=False)
-
-    df = df.drop_duplicates()
     df['city_id'] = 1
+    df = df.drop_duplicates()
 
     _query = 'INSERT INTO locations(location_id, lat, lon, location, city_id) VALUES (%s, %s, %s, %s, %s);'
     with psycopg2.connect(dbname=os.getenv('DB'), user=os.getenv('DB_USER'), password=os.getenv('DB_PWD')) as conn:
@@ -135,9 +138,11 @@ def _populate_locations():
                 traceback.print_exc()
 
 def _populate_sensors():
-
-    df = pd.read_csv("2975-20260101.csv",
-    usecols= ['sensors_id', 'parameter', 'units'], keep_default_na=False)
+    joined_files = os.path.join("data", "*.csv")
+    joined_list = glob.glob(joined_files)
+    df = pd.concat(map(pd.read_csv, joined_list), ignore_index=True)
+    df = df[df.columns[~df.columns.isin(['location_id', 'location',
+                                         'datetime', 'lat', 'lon', 'value'])]]
 
     df = df.drop_duplicates()
 
@@ -157,8 +162,11 @@ def _populate_sensors():
                 traceback.print_exc()
 
 def _populate_measurements():
-    df = pd.read_csv("2975-20260101.csv",
-    usecols= ['datetime', 'value', 'sensors_id'], keep_default_na=False)
+    joined_files = os.path.join("data", "*.csv")
+    joined_list = glob.glob(joined_files)
+    df = pd.concat(map(pd.read_csv, joined_list), ignore_index=True)
+    df = df[df.columns[~df.columns.isin(['location', 'lat','lon',
+                                         'parameter', 'units'])]]
 
     df['location_id'] = 2975
 
@@ -172,7 +180,7 @@ def _populate_measurements():
                     cur.execute(_query, (row['datetime'], row['value'],
                                         row['location_id'], row['sensors_id']))
                 conn.commit()
-                print("Mittaustulokset lisätty tietokantaan")
+                print("Mittaustulokset lisätty tietokantaan onnistuneesti")
             except Exception as e:
                 conn.rollback()
                 traceback.print_exc()
