@@ -5,7 +5,6 @@ from traceback import print_exc
 import calendar
 import pandas as pd
 from urllib.parse import quote
-
 import psycopg2
 import requests
 from dotenv import load_dotenv
@@ -50,6 +49,10 @@ def get_openaq_locations_by_bbox(_bbox):
     return _locations
 
 def download_file_by_location(location_id, year, month):
+    directory_name = "data"
+    if not os.path.exists(directory_name):
+        os.mkdir(directory_name)
+
     base_url = "https://openaq-data-archive.s3.amazonaws.com"
     num_days = calendar.monthrange(year, month)[1]
     for day in range(1, num_days +1):
@@ -64,6 +67,7 @@ def download_file_by_location(location_id, year, month):
             # pandas osaa avata gzip-pakatun csv
             df = pd.read_csv(io.BytesIO(response.content), compression='gzip')
             df.to_csv(f"data/{location_id}-{date_str}.csv", index=False)
+            print(f"Haetaan ja tallennetaan dataa: {location_id}-{date_str}.csv.gz")
         else:
             print(f"Failed to fetch. Status: {response.status_code}")
 
