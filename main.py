@@ -1,6 +1,7 @@
 import glob
 import io
 import os
+import shutil
 import traceback
 from traceback import print_exc
 import calendar
@@ -51,6 +52,8 @@ def get_openaq_locations_by_bbox(_bbox):
 
 def download_file_by_location(location_id, year, month):
     directory_name = "data"
+    if os.path.exists(directory_name):
+        shutil.rmtree(directory_name)
     if not os.path.exists(directory_name):
         os.mkdir(directory_name)
 
