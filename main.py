@@ -171,8 +171,6 @@ def _populate_measurements():
     df = df[df.columns[~df.columns.isin(['location', 'lat','lon',
                                          'parameter', 'units'])]]
 
-    df['location_id'] = 2975
-
     _query = 'INSERT INTO measurements(datetime, value, location_id, sensors_id) VALUES (%s, %s, %s, %s);'
     with psycopg2.connect(dbname=os.getenv('DB'), user=os.getenv('DB_USER'), password=os.getenv('DB_PWD')) as conn:
         with conn.cursor() as cur:
